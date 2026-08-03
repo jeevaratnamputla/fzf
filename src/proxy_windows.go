@@ -3,8 +3,8 @@
 package fzf
 
 import (
-	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -43,39 +43,21 @@ func mkfifo(path string, mode uint32) (string, error) {
 }
 
 func withOutputPipe(output string, task func(io.ReadCloser)) error {
-	sh, err := sh(false)
+	f, err := os.Open(output)
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(sh, "-c", fmt.Sprintf(`command cat %q`, output))
-	outputFile, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	task(outputFile)
-	cmd.Wait()
+	defer f.Close()
+	task(f)
 	return nil
 }
 
 func withInputPipe(input string, task func(io.WriteCloser)) error {
-	sh, err := sh(false)
+	f, err := os.Create(input)
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(sh, "-c", fmt.Sprintf(`command cat - > %q`, input))
-	inputFile, err := cmd.StdinPipe()
-	if err != nil {
-		return err
-	}
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	task(inputFile)
-	inputFile.Close()
-	cmd.Wait()
+	defer f.Close()
+	task(f)
 	return nil
 }
