@@ -35,11 +35,7 @@ func sh(bash bool) (string, error) {
 
 func mkfifo(path string, mode uint32) (string, error) {
 	m := strconv.FormatUint(uint64(mode), 8)
-	sh, err := sh(false)
-	if err != nil {
-		return path, err
-	}
-	cmd := exec.Command(sh, "-c", fmt.Sprintf(`command mkfifo -m %s %q`, m, path))
+	cmd := exec.Command("mkfifo", "-m", m, path)
 	if err := cmd.Run(); err != nil {
 		return path, err
 	}
