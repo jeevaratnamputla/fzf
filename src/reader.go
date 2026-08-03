@@ -383,30 +383,36 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 }
 
 func (r *Reader) readFromCommand(command string, environ []string, signalReady func()) bool {
-	r.mutex.Lock()
+	execOut, exec, started := func() (io.ReadCloser, interface{ Wait() error }, bool) {
+		r.mutex.Lock()
+		defer r.mutex.Unlock()
 
-	r.killed = false
-	r.termFunc = nil
-	r.command = &command
-	exec := r.executor.ExecCommand(command, true)
-	if environ != nil {
-		exec.Env = environ
-	}
-	execOut, err := exec.StdoutPipe()
-	if err != nil || exec.Start() != nil {
+		r.killed = false
+		r.termFunc = nil
+		r.command = &command
+		exec := r.executor.ExecCommand(command, true)
+		if environ != nil {
+			exec.Env = environ
+		}
+		execOut, err := exec.StdoutPipe()
+		if err != nil || exec.Start() != nil {
+			signalReady()
+			return nil, nil, false
+		}
+
+		// Function to call to terminate the running command
+		r.termFunc = func() {
+			execOut.Close()
+			util.KillCommand(exec)
+		}
+
 		signalReady()
-		r.mutex.Unlock()
+		return execOut, exec, true
+	}()
+
+	if !started {
 		return false
 	}
-
-	// Function to call to terminate the running command
-	r.termFunc = func() {
-		execOut.Close()
-		util.KillCommand(exec)
-	}
-
-	signalReady()
-	r.mutex.Unlock()
 
 	r.feed(execOut)
 	return exec.Wait() == nil
