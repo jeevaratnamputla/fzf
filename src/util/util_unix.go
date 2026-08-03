@@ -64,7 +64,8 @@ func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 		fmt.Fprintf(os.Stderr, "fzf (become): %s\n", err.Error())
 		os.Exit(127)
 	}
-	args := append([]string{shellPath}, append(x.args, command)...)
+	safeCommand := x.QuoteEntry(command)
+	args := append([]string{shellPath}, append(x.args, safeCommand)...)
 	SetStdin(stdin)
 	syscall.Exec(shellPath, args, environ)
 }
