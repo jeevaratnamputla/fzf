@@ -110,6 +110,10 @@ func runTmuxFloatingPane(argStr string, dir string, windowWidth int, windowHeigh
 		if err != nil {
 			return nil, err
 		}
+		sh, err = exec.LookPath(sh)
+		if err != nil {
+			return nil, err
+		}
 		// Unlike display-popup, new-pane does not block until the command
 		// finishes, and it does not propagate the exit status. So we block on
 		// a wait-for channel that the pane signals on completion, and pass
