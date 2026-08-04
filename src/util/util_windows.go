@@ -26,6 +26,39 @@ const (
 
 var escapeRegex = regexp.MustCompile(`[&|<>()^%!"]`)
 
+// allowedShells is the set of permitted shell executable base names (lowercase,
+// with or without the .exe suffix).  Only shells in this list may be used as
+// the executable passed to exec.Command, preventing an attacker who controls
+// the SHELL environment variable or the --with-shell flag from injecting an
+// arbitrary binary path.
+var allowedShells = map[string]struct{}{
+	"cmd":          {},
+	"cmd.exe":      {},
+	"powershell":   {},
+	"powershell.exe": {},
+	"pwsh":         {},
+	"pwsh.exe":     {},
+	"bash":         {},
+	"bash.exe":     {},
+	"sh":           {},
+	"sh.exe":       {},
+	"zsh":          {},
+	"zsh.exe":      {},
+	"fish":         {},
+	"fish.exe":     {},
+	"nu":           {},
+	"nu.exe":       {},
+}
+
+// validateShell panics if the base name of shellPath is not in allowedShells.
+// This prevents code-injection via an attacker-controlled shell executable.
+func validateShell(shellPath string) {
+	base := strings.ToLower(filepath.Base(shellPath))
+	if _, ok := allowedShells[base]; !ok {
+		panic(fmt.Sprintf("fzf: shell executable %q is not in the allowed list", shellPath))
+	}
+}
+
 type Executor struct {
 	shell     string
 	shellType shellType
@@ -89,6 +122,11 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 	if setpgid && (x.shellType == shellTypePwsh || x.shellType == shellTypeUnknown) {
 		creationFlags = windows.CREATE_NEW_PROCESS_GROUP
 	}
+
+	// Validate the shell executable against the allowlist before use.
+	// This prevents code injection when $SHELL or --with-shell contains an
+	// attacker-controlled, non-static value.
+	validateShell(shell)
 
 	var cmd *exec.Cmd
 	if x.shellType == shellTypeCmd {
