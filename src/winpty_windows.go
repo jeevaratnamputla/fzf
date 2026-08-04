@@ -57,7 +57,12 @@ func runWinpty(args []string, opts *Options) (int, error) {
 				return nil, err
 			}
 
-			cmd := exec.Command(sh, temp)
+			shPath, err := exec.LookPath(sh)
+			if err != nil {
+				return nil, err
+			}
+
+			cmd := exec.Command(shPath, temp)
 			cmd.Env = append(os.Environ(), "MSYS=enable_pcon")
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
