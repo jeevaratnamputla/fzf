@@ -84,6 +84,15 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 		x.shellPath.Store(shell)
 	}
 
+	// Validate the shell executable against the system PATH to prevent
+	// code injection via a non-static, user-controlled shell value.
+	resolvedShell, err := exec.LookPath(shell)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fzf: shell not found or not executable: %q: %v\n", shell, err)
+		return nil
+	}
+	shell = resolvedShell
+
 	var creationFlags uint32
 	// Set new process group for pwsh (PowerShell 7+) and unknown/posix-ish shells
 	if setpgid && (x.shellType == shellTypePwsh || x.shellType == shellTypeUnknown) {
@@ -115,6 +124,9 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 
 func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 	cmd := x.ExecCommand(command, false)
+	if cmd == nil {
+		os.Exit(127)
+	}
 	cmd.Stdin = stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
