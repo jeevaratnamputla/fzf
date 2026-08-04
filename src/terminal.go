@@ -6860,11 +6860,18 @@ func (t *Terminal) Loop() error {
 		}
 
 		t.mutex.Lock()
+		mutexLocked := true
+		defer func() {
+			if mutexLocked {
+				t.mutex.Unlock()
+			}
+		}()
 		// Ignore --expect keys while wait-blocked like the rest of the input
 		if !t.wait.blocked {
 			for key, ret := range t.expect {
 				if keyMatch(key, event) {
 					t.pressed = ret
+					mutexLocked = false
 					t.mutex.Unlock()
 					t.reqBox.Set(reqClose, nil)
 					return nil
@@ -7077,6 +7084,7 @@ func (t *Terminal) Loop() error {
 			case actExecuteMulti:
 				t.executeCommand(a.a, true, false, false, false, "")
 			case actInvalid:
+				mutexLocked = false
 				t.mutex.Unlock()
 				return false
 			case actBracketedPasteBegin:
@@ -7936,6 +7944,7 @@ func (t *Terminal) Loop() error {
 					t.tui.Clear()
 					t.tui.Pause(t.fullscreen)
 					notifyStop(p)
+					mutexLocked = false
 					t.mutex.Unlock()
 					t.reqBox.Set(reqReinit, nil)
 					return false
@@ -8553,6 +8562,7 @@ func (t *Terminal) Loop() error {
 			req(reqList)
 		}
 
+		mutexLocked = false
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if reload {
