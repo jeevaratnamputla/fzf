@@ -53,7 +53,7 @@ func withOutputPipe(output string, task func(io.ReadCloser)) error {
 }
 
 func withInputPipe(input string, task func(io.WriteCloser)) error {
-	f, err := os.OpenFile(input, os.O_WRONLY, 0)
+	f, err := os.Create(input)
 	if err != nil {
 		return err
 	}
