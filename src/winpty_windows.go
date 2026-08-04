@@ -77,7 +77,12 @@ func runWinpty(args []string, opts *Options) (int, error) {
 			return nil, err
 		}
 
-		cmd := exec.Command(sh, "-c", fmt.Sprintf(`winpty < /dev/tty > /dev/tty -- sh %q`, temp))
+		shPath, err := exec.LookPath(sh)
+		if err != nil {
+			return nil, fmt.Errorf("shell not found in PATH: %w", err)
+		}
+
+		cmd := exec.Command(shPath, "-c", fmt.Sprintf(`winpty < /dev/tty > /dev/tty -- sh %q`, temp))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		return cmd, nil
