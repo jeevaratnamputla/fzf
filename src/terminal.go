@@ -8481,6 +8481,7 @@ func (t *Terminal) Loop() error {
 			pending := t.wait.pending
 			t.wait.pending = nil
 			if !doActions(pending) {
+				t.mutex.Unlock()
 				continue
 			}
 		}
@@ -8490,6 +8491,7 @@ func (t *Terminal) Loop() error {
 			if jumpingBefore != jumpDisabled {
 				t.jumping = jumpDisabled
 				if acts, prs := t.keymap[tui.JumpCancel.AsEvent()]; prs && !doActions(acts) {
+					t.mutex.Unlock()
 					continue
 				}
 				req(reqList)
@@ -8500,6 +8502,7 @@ func (t *Terminal) Loop() error {
 			if len(actions) == 0 && event.Type == tui.Rune {
 				doAction(&action{t: actChar})
 			} else if !doActions(actions) {
+				t.mutex.Unlock()
 				continue
 			}
 			if !t.inputless {
@@ -8508,12 +8511,15 @@ func (t *Terminal) Loop() error {
 			queryChanged = queryChanged || t.pasting == nil && string(previousInput) != string(t.input)
 			changed = changed || queryChanged
 			if onChanges, prs := t.keymap[tui.Change.AsEvent()]; queryChanged && prs && !doActions(onChanges) {
+				t.mutex.Unlock()
 				continue
 			}
 			if onEOFs, prs := t.keymap[tui.BackwardEOF.AsEvent()]; beof && prs && !doActions(onEOFs) {
+				t.mutex.Unlock()
 				continue
 			}
 			if onMultis, prs := t.keymap[tui.Multi.AsEvent()]; t.version != previousVersion && prs && !doActions(onMultis) {
+				t.mutex.Unlock()
 				continue
 			}
 		} else {
@@ -8529,6 +8535,7 @@ func (t *Terminal) Loop() error {
 			}
 			t.jumping = jumpDisabled
 			if acts, prs := t.keymap[jumpEvent.AsEvent()]; prs && !doActions(acts) {
+				t.mutex.Unlock()
 				continue
 			}
 			req(reqList)

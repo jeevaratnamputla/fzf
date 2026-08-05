@@ -47,7 +47,12 @@ func NewExecutor(withShell string) *Executor {
 
 // ExecCommand executes the given command with $SHELL
 func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
-	cmd := exec.Command(x.shell, append(x.args, command)...)
+	shellPath, err := exec.LookPath(x.shell)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fzf (ExecCommand): %s\n", err.Error())
+		os.Exit(127)
+	}
+	cmd := exec.Command(shellPath, append(x.args, command)...)
 	if setpgid {
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	}
