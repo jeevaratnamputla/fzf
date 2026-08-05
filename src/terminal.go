@@ -6892,11 +6892,11 @@ func (t *Terminal) Loop() error {
 		}
 		toggle := func() bool {
 			current := t.currentItem()
-			if current != nil && t.toggleItem(current) {
+			toggled := current != nil && t.toggleItem(current)
+			if toggled {
 				req(reqInfo)
-				return true
 			}
-			return false
+			return toggled
 		}
 		scrollPreviewTo := func(newOffset int) {
 			if t.previewer.scrollable {
