@@ -6899,20 +6899,19 @@ func (t *Terminal) Loop() error {
 			return false
 		}
 		scrollPreviewTo := func(newOffset int) {
-			if !t.previewer.scrollable {
-				return
-			}
-			numLines := len(t.previewer.lines)
-			headerLines := t.activePreviewOpts.headerLines
-			if t.activePreviewOpts.cycle {
-				offsetRange := numLines - headerLines
-				newOffset = ((newOffset-headerLines)+offsetRange)%offsetRange + headerLines
-			}
-			newOffset = util.Constrain(newOffset, headerLines, numLines-1)
-			if t.previewer.offset != newOffset {
-				t.previewer.offset = newOffset
-				t.previewer.following.Set(t.previewer.offset >= numLines-(t.pwindow.Height()-headerLines))
-				req(reqPreviewRefresh)
+			if t.previewer.scrollable {
+				numLines := len(t.previewer.lines)
+				headerLines := t.activePreviewOpts.headerLines
+				if t.activePreviewOpts.cycle {
+					offsetRange := numLines - headerLines
+					newOffset = ((newOffset-headerLines)+offsetRange)%offsetRange + headerLines
+				}
+				newOffset = util.Constrain(newOffset, headerLines, numLines-1)
+				if t.previewer.offset != newOffset {
+					t.previewer.offset = newOffset
+					t.previewer.following.Set(t.previewer.offset >= numLines-(t.pwindow.Height()-headerLines))
+					req(reqPreviewRefresh)
+				}
 			}
 		}
 		scrollPreviewBy := func(amount int) {
